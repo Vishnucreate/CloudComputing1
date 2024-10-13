@@ -43,7 +43,6 @@ public class AWSObjectRekognition {
 
         Regions clientRegion = Regions.US_EAST_1;
         String bucketName = "njit-cs-643";
-        String queueUrl = "https://sqs.us-east-1.amazonaws.com/123456789012/MyQueue.fifo";
 
         try {
             AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
@@ -65,7 +64,7 @@ public class AWSObjectRekognition {
             // exist
             if (!client.queueExists("sqsforcarimage")) {
                 Map<String, String> attributes = new HashMap<String, String>();
-                attributes.put("FifoQueue", "true");
+                attributes.put("sqsforcarimage", "true");
                 attributes.put("ContentBasedDeduplication", "true");
                 client.createQueue(new CreateQueueRequest().withQueueName("sqsforcarimage").withAttributes(attributes));
             }
