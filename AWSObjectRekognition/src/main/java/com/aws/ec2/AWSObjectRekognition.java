@@ -60,18 +60,18 @@ public class AWSObjectRekognition {
             // Get the wrapped client
             AmazonSQSMessagingClientWrapper client = connection.getWrappedAmazonSQSClient();
 
-            // Create an Amazon SQS FIFO queue named MyQueue.fifo, if it doesn't already
+            // Create an Amazon SQS FIFO queue named sqsforcarimage, if it doesn't already
             // exist
-            if (!client.queueExists("MyQueue.fifo")) {
+            if (!client.queueExists("sqsforcarimage")) {
                 Map<String, String> attributes = new HashMap<String, String>();
                 attributes.put("FifoQueue", "true");
                 attributes.put("ContentBasedDeduplication", "true");
-                client.createQueue(new CreateQueueRequest().withQueueName("MyQueue.fifo").withAttributes(attributes));
+                client.createQueue(new CreateQueueRequest().withQueueName("sqsforcarimage").withAttributes(attributes));
             }
             // Create the nontransacted session with AUTO_ACKNOWLEDGE mode
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             // Create a queue identity and specify the queue name to the session
-            Queue queue = session.createQueue("MyQueue.fifo");
+            Queue queue = session.createQueue("sqsforcarimage");
 
             // Create a producer for the 'MyQueue'
             MessageProducer producer = session.createProducer(queue);
