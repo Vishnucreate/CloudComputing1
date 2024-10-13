@@ -43,6 +43,7 @@ public class AWSObjectRekognition {
 
         Regions clientRegion = Regions.US_EAST_1;
         String bucketName = "njit-cs-643";
+        String queueUrl = "https://sqs.us-east-1.amazonaws.com/123456789012/MyQueue.fifo";
 
         try {
             AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
@@ -71,7 +72,7 @@ public class AWSObjectRekognition {
             // Create the nontransacted session with AUTO_ACKNOWLEDGE mode
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             // Create a queue identity and specify the queue name to the session
-            Queue queue = session.createQueue("sqsforcarimage");
+            Queue queue = session.createQueue("https://sqs.us-east-1.amazonaws.com/323052225972/sqsforcarimage");
 
             // Create a producer for the 'MyQueue'
             MessageProducer producer = session.createProducer(queue);
