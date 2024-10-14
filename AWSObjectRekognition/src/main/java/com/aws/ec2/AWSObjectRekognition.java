@@ -78,7 +78,7 @@ public class AWSObjectRekognition {
             ListObjectsV2Result result;
 
             do {
-                result = s3Client.listObjectsV2(req);
+                result =  ((AmazonS3) s3Client). listObjectsV2(req);
                 for (S3ObjectSummary objectSummary : result.getObjectSummaries()) {
                     String photo = objectSummary.getKey();
                     AmazonRekognition rekognitionClient = AmazonRekognitionClientBuilder.standard()
