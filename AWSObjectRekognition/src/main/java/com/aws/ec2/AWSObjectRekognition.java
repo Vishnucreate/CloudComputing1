@@ -45,7 +45,7 @@ public class AWSObjectRekognition {
         String queueUrl = "https://sqs.us-east-1.amazonaws.com/323052225972/sqsforcarimage";
 
         try {
-            AmazonSQS sqsClient = AmazonSQSClientBuilder.standard()
+            AmazonSQS s3Client = AmazonSQSClientBuilder.standard()
     .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("https://sqs.us-east-1.amazonaws.com", "us-east-1"))
     .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("ASIAUWN3JYW2O25BMFWE", "9rknlDDjY482pGPHBtE+XlqiMJYodE+yueBjlSUL"))) // Use your appropriate credential setup
     .build();
