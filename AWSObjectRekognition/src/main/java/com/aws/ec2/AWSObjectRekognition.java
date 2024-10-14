@@ -62,12 +62,12 @@ public class AWSObjectRekognition {
 
             // Create an Amazon SQS FIFO queue named sqsforcarimage, if it doesn't already
             // exist
-            if (!client.queueExists("sqsforcarimage")) {
-                Map<String, String> attributes = new HashMap<String, String>();
-                attributes.put("sqsforcarimage", "true");
-                attributes.put("ContentBasedDeduplication", "true");
-                client.createQueue(new CreateQueueRequest().withQueueName("sqsforcarimage").withAttributes(attributes));
-            }
+            // if (!client.queueExists("sqsforcarimage")) {
+            //     Map<String, String> attributes = new HashMap<String, String>();
+            //     // attributes.put("sqsforcarimage", "true");
+            //     // attributes.put("ContentBasedDeduplication", "true");
+            //     client.createQueue(new CreateQueueRequest().withQueueName("sqsforcarimage").withAttributes(attributes));
+            // }
             // Create the nontransacted session with AUTO_ACKNOWLEDGE mode
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             // Create a queue identity and specify the queue name to the session
