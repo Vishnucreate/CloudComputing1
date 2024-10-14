@@ -10,7 +10,7 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 
 import org.springframework.boot.SpringApplication;
-
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazon.sqs.javamessaging.ProviderConfiguration;
 import com.amazon.sqs.javamessaging.SQSConnection;
 import com.amazon.sqs.javamessaging.SQSConnectionFactory;
