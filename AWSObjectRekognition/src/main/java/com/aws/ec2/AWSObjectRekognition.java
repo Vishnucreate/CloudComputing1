@@ -31,6 +31,9 @@ import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
 
 public class AWSObjectRekognition {
 
@@ -42,9 +45,11 @@ public class AWSObjectRekognition {
         String queueUrl = "https://sqs.us-east-1.amazonaws.com/323052225972/sqsforcarimage";
 
         try {
-            AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-                    .withRegion(clientRegion)
-                    .build();
+            AmazonSQS sqsClient = AmazonSQSClientBuilder.standard()
+    .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("https://sqs.us-east-1.amazonaws.com", "us-east-1"))
+    .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(ASIAUWN3JYW2O25BMFWE, 9rknlDDjY482pGPHBtE+XlqiMJYodE+yueBjlSUL))) // Use your appropriate credential setup
+    .build();
+
 
             // Set up the SQS connection factory with an explicit region
             SQSConnectionFactory connectionFactory = new SQSConnectionFactory(
