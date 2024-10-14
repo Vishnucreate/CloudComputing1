@@ -52,7 +52,7 @@ public class AWSObjectRekognition {
 
         try {
             AmazonSQS s3Client = AmazonSQSClientBuilder.standard()
-    .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("ASIAUWN3JYW2O25BMFWE", "9rknlDDjY482pGPHBtE+XlqiMJYodE+yueBjlSUL"))) // Use your appropriate credential setup
+    .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("ASIAUWN3JYW2HUZWMAMY", "BA8tTOaYufdpfUr6xsbWhyRBXynvdwMhKPHFyHnP"))) // Use your appropriate credential setup
     .build();
 
 
