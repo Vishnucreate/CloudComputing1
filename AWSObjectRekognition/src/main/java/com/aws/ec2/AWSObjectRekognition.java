@@ -61,7 +61,7 @@ public class AWSObjectRekognition {
             SQSConnectionFactory connectionFactory = new SQSConnectionFactory(
                     new ProviderConfiguration(),
                     AmazonSQSClientBuilder.standard()
-                            .withRegion(clientRegion)
+                            
                             .withCredentials(new DefaultAWSCredentialsProviderChain())
             );
 
