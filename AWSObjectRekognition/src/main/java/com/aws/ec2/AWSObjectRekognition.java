@@ -46,8 +46,6 @@ public class AWSObjectRekognition {
 
     public static void main(String[] args) throws IOException, JMSException {
         SpringApplication.run(AWSObjectRekognition.class, args);
-
-        Regions clientRegion = Regions.US_EAST_1;
         String bucketName = "njit-cs-643";
         String queueUrl = "https://sqs.us-east-1.amazonaws.com/323052225972/sqsforcarimage";
 
@@ -86,7 +84,7 @@ public class AWSObjectRekognition {
                     
                     // Create the Rekognition client
                     AmazonRekognition rekognitionClient = AmazonRekognitionClientBuilder.standard()
-                            .withRegion(clientRegion)
+                          
                             .withCredentials(new DefaultAWSCredentialsProviderChain())
                             .build();
 
