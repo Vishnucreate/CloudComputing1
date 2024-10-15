@@ -54,7 +54,6 @@ public class AWSObjectRekognition {
         try {
             // Initialize the S3 client
             AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-                    .withRegion(clientRegion)
                     .withCredentials(new DefaultAWSCredentialsProviderChain())
                     .build();
 
