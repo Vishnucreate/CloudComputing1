@@ -56,15 +56,17 @@ public class AWSObjectRekognition {
                     .build();
 
             // Set up the SQS connection factory for the specified region
-            SQSConnectionFactory connectionFactory = new SQSConnectionFactory(
-                    new ProviderConfiguration(),
-                    AmazonSQSClientBuilder.standard()
-                            
-                            .withCredentials(new DefaultAWSCredentialsProviderChain())
-            );
+            // SQSConnectionFactory connectionFactory = new SQSConnectionFactory(
+            //         new ProviderConfiguration(),
+            //         AmazonSQSClientBuilder.standard() 
+            //                 .withCredentials(new DefaultAWSCredentialsProviderChain())
+            // );
+            AmazonSQS connectionFactory = AmazonSQSClientBuilder.standard()
+        .withCredentials(new DefaultAWSCredentialsProviderChain())
+        .build();
 
             // Establish the SQS connection
-            SQSConnection connection = connectionFactory.createConnection();
+            SQSConnection connection = ((SQSConnectionFactory) connectionFactory).createConnection();
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
             // Create a session queue from the queue URL
