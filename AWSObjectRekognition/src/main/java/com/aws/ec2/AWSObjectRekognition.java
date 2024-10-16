@@ -17,7 +17,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.util.List;
 
-public class App 
+public class AWSObjectRekognition 
 {
   
    public static void main( String[] args )
