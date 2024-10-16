@@ -1,9 +1,5 @@
 package com.aws.ec2;
 
-/**
- * Hello world!
- *
- */
 
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.rekognition.RekognitionClient;
