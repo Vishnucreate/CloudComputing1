@@ -1,47 +1,18 @@
-package com.aws.ec2;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
-
-import javax.jms.JMSException;
-import javax.jms.MessageProducer;
-import javax.jms.Queue;
-import javax.jms.Session;
-import javax.jms.TextMessage;
-
-import org.springframework.boot.SpringApplication;
-
-import com.amazon.sqs.javamessaging.AmazonSQSMessagingClientWrapper;
-import com.amazon.sqs.javamessaging.ProviderConfiguration;
-import com.amazon.sqs.javamessaging.SQSConnection;
-import com.amazon.sqs.javamessaging.SQSConnectionFactory;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.SdkClientException;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.rekognition.AmazonRekognition;
 import com.amazonaws.services.rekognition.AmazonRekognitionClientBuilder;
-import com.amazonaws.services.rekognition.model.AmazonRekognitionException;
-import com.amazonaws.services.rekognition.model.DetectLabelsRequest;
-import com.amazonaws.services.rekognition.model.DetectLabelsResult;
-import com.amazonaws.services.rekognition.model.Image;
-import com.amazonaws.services.rekognition.model.Label;
-import com.amazonaws.services.rekognition.model.S3Object;
+import com.amazonaws.services.rekognition.model.*;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.ListObjectsV2Request;
-import com.amazonaws.services.s3.model.ListObjectsV2Result;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
-import com.amazonaws.services.sqs.model.CreateQueueRequest;
+import com.amazonaws.services.s3.model.*;
+import com.amazon.sqs.javamessaging.*;
+import javax.jms.*;
+import java.io.IOException;
+import java.util.List;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+@SpringBootApplication
 public class AWSObjectRekognition {
 
     public static void main(String[] args) throws IOException, JMSException {
@@ -56,17 +27,15 @@ public class AWSObjectRekognition {
                     .build();
 
             // Set up the SQS connection factory for the specified region
-            // SQSConnectionFactory connectionFactory = new SQSConnectionFactory(
-            //         new ProviderConfiguration(),
-            //         AmazonSQSClientBuilder.standard() 
-            //                 .withCredentials(new DefaultAWSCredentialsProviderChain())
-            // );
-            AmazonSQS connectionFactory = AmazonSQSClientBuilder.standard()
-        .withCredentials(new DefaultAWSCredentialsProviderChain())
-        .build();
+            SQSConnectionFactory connectionFactory = new SQSConnectionFactory(
+                    new ProviderConfiguration(),
+                    AmazonSQSClientBuilder.standard()
+                            .withCredentials(new DefaultAWSCredentialsProviderChain())
+                            .withRegion("us-east-1")
+            );
 
             // Establish the SQS connection
-            SQSConnection connection = ((SQSConnectionFactory) connectionFactory).createConnection();
+            SQSConnection connection = connectionFactory.createConnection();
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
             // Create a session queue from the queue URL
@@ -83,11 +52,11 @@ public class AWSObjectRekognition {
                 result = s3Client.listObjectsV2(req);
                 for (S3ObjectSummary objectSummary : result.getObjectSummaries()) {
                     String photo = objectSummary.getKey();
-                    
+
                     // Create the Rekognition client
                     AmazonRekognition rekognitionClient = AmazonRekognitionClientBuilder.standard()
-                          
                             .withCredentials(new DefaultAWSCredentialsProviderChain())
+                            .withRegion("us-east-1")
                             .build();
 
                     // Create the request for Rekognition
@@ -96,31 +65,27 @@ public class AWSObjectRekognition {
                             .withMaxLabels(10)
                             .withMinConfidence(75F);
 
-                    try {
-                        // Call Rekognition to detect labels
-                        DetectLabelsResult detectLabelsResult = rekognitionClient.detectLabels(detectLabelsRequest);
-                        List<Label> labels = detectLabelsResult.getLabels();
+                    // Call Rekognition to detect labels
+                    DetectLabelsResult detectLabelsResult = rekognitionClient.detectLabels(detectLabelsRequest);
+                    List<Label> labels = detectLabelsResult.getLabels();
 
-                        for (Label label : labels) {
-                            if ("Car".equals(label.getName()) && label.getConfidence() > 90) {
-                                System.out.println("Detected 'Car' with confidence: " + label.getConfidence());
+                    for (Label label : labels) {
+                        if ("Car".equals(label.getName()) && label.getConfidence() > 90) {
+                            System.out.println("Detected 'Car' with confidence: " + label.getConfidence());
 
-                                // Send a message to the SQS queue
-                                TextMessage message = session.createTextMessage(photo);
-                                message.setStringProperty("JMSXGroupID", "Default"); // Group ID for FIFO queue
-                                producer.send(message);
+                            // Send a message to the SQS queue
+                            TextMessage message = session.createTextMessage(photo);
+                            message.setStringProperty("JMSXGroupID", "Default"); // Group ID for FIFO queue
+                            producer.send(message);
 
-                                System.out.println("Message sent with ID: " + message.getJMSMessageID());
-                            }
+                            System.out.println("Message sent with ID: " + message.getJMSMessageID());
                         }
-                    } catch (AmazonRekognitionException e) {
-                        System.err.println("Rekognition error for image: " + photo);
-                        e.printStackTrace();
                     }
                 }
                 req.setContinuationToken(result.getNextContinuationToken());
             } while (result.isTruncated());
 
+            // Close the connection
             connection.close();
 
         } catch (AmazonServiceException e) {
