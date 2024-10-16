@@ -142,7 +142,7 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-maven-plugin</artifactId>
 			 <configuration>
-                         <mainClass>com.aws.ec2.AWSObjectRekognition.java</mainClass>
+                         <mainClass>com.aws.ec2.AWSObjectRekognition</mainClass>
                         </configuration>
 			</plugin>
 			<plugin>
