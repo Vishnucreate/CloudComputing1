@@ -46,7 +46,7 @@ public class AWSObjectRekognition {
 
     public static void main(String[] args) throws IOException, JMSException {
         SpringApplication.run(AWSObjectRekognition.class, args);
-        String bucketUrl = "https://njit-cs-643.s3.us-east-1.amazonaws.com/";
+        String bucketName = "njit-cs-643"
         String queueUrl = "https://sqs.us-east-1.amazonaws.com/323052225972/MyQueue.fifo";
 
         try {
