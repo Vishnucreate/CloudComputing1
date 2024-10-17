@@ -11,7 +11,6 @@ An image recognition pipeline in AWS, using two parallel EC2 instances, S3, SQS,
 
 **Description**: You have to build an image recognition pipeline in AWS, using two EC2 instances, S3, SQS, and Rekognition. The assignment must be done in Java on Amazon Linux VMs. For the rest of the description, you should refer to the figure below:
 
-![Project flow diagram](https://raw.githubusercontent.com/Boro23-wq/AWS-Image-Recognition-Pipeline/master/assets/project-architecture.jpg)
 
 Your have to create 2 EC2 instances (EC2 A and B in the figure), with Amazon Linux AMI, that will work in parallel. Each instance will run a Java application. Instance A will read 10 images from an S3 bucket that we created (https://njit-cs-643.s3.us-east-1.amazonaws.com) and perform object detection in the images. When a car is detected using Rekognition, with confidence higher than 90%, the index of that image (e.g., 2.jpg) is stored in SQS. Instance B reads indexes of images from SQS as soon as these indexes become available in the queue, and performs text recognition on these images (i.e., downloads them from S3 one by one and uses Rekognition for text recognition). Note that the two instances work in parallel: for example, instance A is processing image 3, while instance B is processing image 1 that was recognized as a car by instance A. When instance A terminates its image processing, it adds index -1 to the queue to signal to instance B that no more indexes will come. When instance B finishes, it prints to a file, in its associated EBS, the indexes of the images that have both cars and text, and also prints the actual text in each image next to its index.
 
@@ -38,7 +37,6 @@ Your have to create 2 EC2 instances (EC2 A and B in the figure), with Amazon Lin
 
 **Note:** You have to follow the above step twice to create two instances. My instances are named **EC2-A** and **EC2-B** and looks like this:
 
-![Running EC2 instances](https://raw.githubusercontent.com/Boro23-wq/AWS-Image-Recognition-Pipeline/master/assets/running-ec2-instances.png)
 
 ### Add IAM roles to the created instances:
 1. Once you create your instances, head over to EC2 instances to see your instances. If your instances aren't running select an instance, click on **Instance state** dropdown and **Start instance**.
@@ -57,7 +55,7 @@ Your have to create 2 EC2 instances (EC2 A and B in the figure), with Amazon Lin
 	> In simple words, a *JAR file* is a file that contains a compressed version of .class files, audio files, image files, or directories.
 	
 4. Once you have the JAR files ready you can upload it to the respective EC2 instances using **Cyberduck** (Mac) or **WinSCP** (Windows). I am using Cyberduck for the project since I'm working with a Mac system.
-	- If you want to learn how to upload file in EC2 instance using Cyberduck, follow the link - [FTP into your EC2-instance with Cyberduck](http://www.brianhoshi.com/blog/how-to-ftp-into-your-ec2-instance-with-cyberduck/   )
+	- If you want to learn how to upload file in EC2 instance using Cyberduck, follow the link - [FTP into your EC2-instance with Cyberduck]
 	- **Note**: The username while you FTP to your EC2 instance using Cyberduck should be 'ec2-user'.
 
 ### SSH Access from a Mac:
@@ -86,9 +84,6 @@ We will now SSH from Mac to access both our EC2 instances.
 7.  Type `yes` when prompted to allow a first connection to this remote SSH server. Because you are using a key pair for authentication, you will not be prompted for a password.
 
 Once we SSH to the two EC2 instances we will have something like this:
-
-![SSH access to EC2 instances](https://raw.githubusercontent.com/Boro23-wq/AWS-Image-Recognition-Pipeline/master/assets/ssh-to-ec2-instances.png)
-
 ### Run the programs on respective EC2 instance:
 1. Make sure to update your **access_key**, **secret_key**, and **default_region** on your AWS terminal.
 	- To update the above information, type `aws configure` on the AWS terminal.
@@ -99,23 +94,16 @@ Once we SSH to the two EC2 instances we will have something like this:
 	- The file will have the necessary data about the indexes of the images that have both cars and text, and also prints the actual text in each image next to its index.
 
 #### Running program on EC2-A instance (First EC2 instance):
-1. Once you run the AWSObjectDetection.jar on EC2-A instance the images that satisfies the condition will be pushed to the SQS (Queue).
-![Item 5 pushed to queue](https://raw.githubusercontent.com/Boro23-wq/AWS-Image-Recognition-Pipeline/master/assets/msgs-push-to-sqs-3.png)
-![Item 6  pushed to queue](https://raw.githubusercontent.com/Boro23-wq/AWS-Image-Recognition-Pipeline/master/assets/msgs-push-to-sqs-2.png)
-![Item 7 pushed to queue](https://raw.githubusercontent.com/Boro23-wq/AWS-Image-Recognition-Pipeline/master/assets/msgs-push-to-sqs-1.png)
+1. Once you run the AWSObjectDetection.jar on EC2-A instance the images that satisfies the condition will be pushed to the SQS (Queue)
 2. We have 6 items that are pushed to the queue, since only 6 items satisfies the condition ( Label = "Car" and Confidence > 90).
-3. The queue is created like so:
-![Queue creation](https://raw.githubusercontent.com/Boro23-wq/AWS-Image-Recognition-Pipeline/master/assets/queue-creation.png)
+3. The queue is created
 
-4. And the contents of the queues can be obtained by long polling:
-![Queue content](https://raw.githubusercontent.com/Boro23-wq/AWS-Image-Recognition-Pipeline/master/assets/content-inside-queue.png)
+4. And the contents of the queues can be obtained by long polling
 
 Once we populate the queues we can see how does it look when we run the AWSTextRekognition program on EC2-B instance.
 
 #### Running program on EC2-B instance (Second EC2 instance):
 1. We run the AWSTextRekognition.jar on EC2-B instance like so:
-![Snapshot of pogram running on EC2-B instance](https://raw.githubusercontent.com/Boro23-wq/AWS-Image-Recognition-Pipeline/master/assets/cmd-to-run-program-ec2-b.png)
 
 2. When instance B finishes, it prints to a file (output.txt), the indexes of the images that have both cars and text, and also prints the actual text in each image next to its index.
-3. The final output stored in output.txt looks like this:
-![Final output](https://raw.githubusercontent.com/Boro23-wq/AWS-Image-Recognition-Pipeline/master/assets/final-output.png)
+3. The final output stored in output.txt
