@@ -42,7 +42,7 @@ public class AWSObjectRekognition
                 .build();
 
 
-        String sqsQueueUrl = "https://sqs.us-east-1.amazonaws.com/323052225972/sqsforcarimage";
+        String sqsQueueUrl = "https://sqs.us-east-1.amazonaws.com/323052225972/MyQueue.fifo";
 
         String bucketName = "njit-cs-643";
 
