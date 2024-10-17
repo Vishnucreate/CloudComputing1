@@ -12,8 +12,6 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.springframework.boot.SpringApplication;
-
 import com.amazon.sqs.javamessaging.AmazonSQSMessagingClientWrapper;
 import com.amazon.sqs.javamessaging.ProviderConfiguration;
 import com.amazon.sqs.javamessaging.SQSConnection;
@@ -21,9 +19,7 @@ import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.rekognition.AmazonRekognition;
 import com.amazonaws.services.rekognition.AmazonRekognitionClientBuilder;
@@ -38,96 +34,106 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 
 public class AWSObjectRekognition {
 
     public static void main(String[] args) throws IOException, JMSException {
-        SpringApplication.run(AWSObjectRekognition.class, args);
+        Regions clientRegion = Regions.US_EAST_1;
         String bucketName = "njit-cs-643";
-        String queueUrl = "https://sqs.us-east-1.amazonaws.com/323052225972/sqsforcarimage";
+        String queueName = "sqsforcarimage.fifo";
 
         try {
-            // Initialize the S3 client
+            // Create S3 Client
             AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-                    .withCredentials(new DefaultAWSCredentialsProviderChain())
+                    .withRegion(clientRegion)
+                    .withCredentials(new AWSStaticCredentialsProvider(new ProfileCredentialsProvider().getCredentials()))
                     .build();
 
-            // Set up the SQS connection factory for the specified region
-            // SQSConnectionFactory connectionFactory = new SQSConnectionFactory(
-            //         new ProviderConfiguration(),
-            //         AmazonSQSClientBuilder.standard() 
-            //                 .withCredentials(new DefaultAWSCredentialsProviderChain())
-            // );
-            AmazonSQS connectionFactory = AmazonSQSClientBuilder.standard()
-        .withCredentials(new DefaultAWSCredentialsProviderChain())
-        .build();
+            // Create the SQSConnectionFactory
+            SQSConnectionFactory connectionFactory = new SQSConnectionFactory(
+                    new ProviderConfiguration(),
+                    AmazonSQSClientBuilder.standard()
+                            .withRegion(clientRegion)
+                            .withCredentials(new AWSStaticCredentialsProvider(new ProfileCredentialsProvider().getCredentials()))
+            );
 
             // Establish the SQS connection
-            SQSConnection connection = ((SQSConnectionFactory) connectionFactory).createConnection();
+            SQSConnection connection = connectionFactory.createConnection();
+
+            // Get the wrapped Amazon SQS client
+            AmazonSQSMessagingClientWrapper client = connection.getWrappedAmazonSQSClient();
+
+            // Create the SQS FIFO queue if it doesn't exist
+            if (!client.queueExists(queueName)) {
+                Map<String, String> attributes = new HashMap<>();
+                attributes.put("FifoQueue", "true");
+                attributes.put("ContentBasedDeduplication", "true");
+                client.createQueue(new CreateQueueRequest().withQueueName(queueName).withAttributes(attributes));
+            }
+
+            // Create a non-transacted session with AUTO_ACKNOWLEDGE mode
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-            // Create a session queue from the queue URL
-            Queue queue = session.createQueue(queueUrl);
+            // Create a queue identity and specify the queue name to the session
+            Queue queue = session.createQueue(queueName);
 
-            // Create a message producer for the queue
+            // Create a producer for the 'sqsforcarimage.fifo' queue
             MessageProducer producer = session.createProducer(queue);
 
             // List objects in the S3 bucket
             ListObjectsV2Request req = new ListObjectsV2Request().withBucketName(bucketName);
             ListObjectsV2Result result;
-
             do {
                 result = s3Client.listObjectsV2(req);
                 for (S3ObjectSummary objectSummary : result.getObjectSummaries()) {
                     String photo = objectSummary.getKey();
-                    
-                    // Create the Rekognition client
+
+                    // Create Rekognition client
                     AmazonRekognition rekognitionClient = AmazonRekognitionClientBuilder.standard()
-                          
-                            .withCredentials(new DefaultAWSCredentialsProviderChain())
+                            .withRegion(clientRegion)
+                            .withCredentials(new AWSStaticCredentialsProvider(new ProfileCredentialsProvider().getCredentials()))
                             .build();
 
-                    // Create the request for Rekognition
+                    // Prepare request to detect labels in the image
                     DetectLabelsRequest detectLabelsRequest = new DetectLabelsRequest()
                             .withImage(new Image().withS3Object(new S3Object().withName(photo).withBucket(bucketName)))
                             .withMaxLabels(10)
                             .withMinConfidence(75F);
 
                     try {
-                        // Call Rekognition to detect labels
+                        // Detect labels in the image
                         DetectLabelsResult detectLabelsResult = rekognitionClient.detectLabels(detectLabelsRequest);
                         List<Label> labels = detectLabelsResult.getLabels();
 
                         for (Label label : labels) {
                             if ("Car".equals(label.getName()) && label.getConfidence() > 90) {
-                                System.out.println("Detected 'Car' with confidence: " + label.getConfidence());
+                                System.out.print("Detected labels for: " + photo + " => ");
+                                System.out.print("Label: " + label.getName() + ", ");
+                                System.out.println("Confidence: " + label.getConfidence());
 
-                                // Send a message to the SQS queue
-                                TextMessage message = session.createTextMessage(photo);
-                                message.setStringProperty("JMSXGroupID", "Default"); // Group ID for FIFO queue
+                                // Send message to SQS
+                                TextMessage message = session.createTextMessage(objectSummary.getKey());
+                                message.setStringProperty("JMSXGroupID", "Default");
                                 producer.send(message);
 
-                                System.out.println("Message sent with ID: " + message.getJMSMessageID());
+                                System.out.println("Pushed to SQS with JMS Message ID: " + message.getJMSMessageID());
+                                System.out.println("JMS Message Sequence Number: " + message.getStringProperty("JMS_SQS_SequenceNumber"));
                             }
                         }
                     } catch (AmazonRekognitionException e) {
-                        System.err.println("Rekognition error for image: " + photo);
                         e.printStackTrace();
                     }
                 }
                 req.setContinuationToken(result.getNextContinuationToken());
             } while (result.isTruncated());
 
+            // Close the connection
             connection.close();
-
         } catch (AmazonServiceException e) {
-            System.err.println("AWS service error:");
             e.printStackTrace();
         } catch (SdkClientException e) {
-            System.err.println("AWS SDK client error:");
             e.printStackTrace();
         }
     }
