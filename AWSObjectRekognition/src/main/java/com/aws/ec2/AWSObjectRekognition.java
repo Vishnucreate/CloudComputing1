@@ -1,114 +1,158 @@
-package com.aws.ec2;
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>		
+		<version>2.3.4.RELEASE</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
 
-/**
- * Hello world!
- *
- */
+	<groupId>com.aws.ec2</groupId>
+	<artifactId>aws-object-rekognition</artifactId>
+	<packaging>jar</packaging>
+	<version>1.0-SNAPSHOT</version>	
+	<name>AWSObjectRekognition</name>
+	<description>Project Name</description>
 
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.rekognition.RekognitionClient;
-import software.amazon.awssdk.services.rekognition.model.DetectLabelsRequest;
-import software.amazon.awssdk.services.rekognition.model.Image;
-import software.amazon.awssdk.services.rekognition.model.DetectLabelsResponse;
-import software.amazon.awssdk.services.rekognition.model.Label;
-import software.amazon.awssdk.services.rekognition.model.S3Object;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
-import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
-import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
+	<properties>
+		<java.version>11</java.version>
+		<spring-cloud.version>Hoxton.SR8</spring-cloud.version>
+		<url>http://maven.apache.org</url>
+     	<maven.compiler.source>1.8</maven.compiler.source>
+     	<maven.compiler.target>1.8</maven.compiler.target>
+	</properties>
+	
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-aws</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-aws-messaging</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.junit.vintage</groupId>
+					<artifactId>junit-vintage-engine</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+      		<groupId>com.amazonaws</groupId>
+     		<artifactId>aws-java-sdk-ec2</artifactId>
+    	</dependency>
+    	<dependency>
+      		<groupId>junit</groupId>
+      		<artifactId>junit</artifactId>
+      		<version>3.8.1</version>
+      		<scope>test</scope>
+    	</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<version>2.28.22</version>
+		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>sqs</artifactId>
+			<version>2.28.22</version>
+		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>rekognition</artifactId>
+			<version>2.28.22</version>
+		</dependency>
 
-import java.util.List;
-
-public class AWSObjectRekognition
-{
-
-    public static void main( String[] args )
-    {
-        Region region = Region.US_EAST_1;
-
-
-        RekognitionClient rekognitionClient = RekognitionClient.builder()
-                .region(region)
-                .build();
-
-        SqsClient sqsClient = SqsClient.builder()
-                .region(region)
-                .build();
-
-        S3Client s3Client = S3Client.builder()
-                .region(region)
-                .build();
-
-
-        String sqsQueueUrl = "https://sqs.us-east-1.amazonaws.com/323052225972/MyQueue.fifo";
-
-        String bucketName = "njit-cs-643";
-
-
-        List<String> imageNames = fetchImageNamesFromS3(bucketName, s3Client);
-        for (String imageName : imageNames) {
-            detectCars(bucketName, imageName, rekognitionClient, sqsClient, sqsQueueUrl);
-        }
-
-
-        rekognitionClient.close();
-        sqsClient.close();
-        s3Client.close();
-    }
-
-
-    public static List<String> fetchImageNamesFromS3(String bucketName, S3Client s3Client) {
-        ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
-                .bucket(bucketName)
-                .build();
-
-        ListObjectsV2Response listResponse = s3Client.listObjectsV2(listRequest);
-        return listResponse.contents().stream()
-                .map(s3Object -> s3Object.key())
-                .toList();
-    }
-
-
-    public static void detectCars(String bucketName, String imageName, RekognitionClient rekognitionClient, SqsClient sqsClient, String sqsQueueUrl) {
-
-        S3Object s3Object = S3Object.builder()
-                .bucket(bucketName)
-                .name(imageName)
-                .build();
-
-
-        Image image = Image.builder()
-                .s3Object(s3Object)
-                .build();
-
-
-        DetectLabelsRequest request = DetectLabelsRequest.builder()
-                .image(image)
-                .minConfidence(90F)
-                .build();
-
-
-        DetectLabelsResponse result = rekognitionClient.detectLabels(request);
-        List<Label> labels = result.labels();
-
-        for (Label label : labels) {
-            if (label.name().equalsIgnoreCase("Car") && label.confidence() >= 90) {
-                System.out.println("Car detected in image: " + imageName + " with confidence: " + label.confidence());
-                pushToSQS(imageName, sqsClient, sqsQueueUrl);
-                break;
-            }
-        }
-    }
-
-    public static void pushToSQS(String imageName, SqsClient sqsClient, String sqsQueueUrl) {
-        SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
-                .queueUrl(sqsQueueUrl)
-                .messageBody(imageName)
-                .build();
-
-        SendMessageResponse sendMessageResponse = sqsClient.sendMessage(sendMessageRequest);
-        System.out.println("Message sent to SQS: " + imageName + ", MessageId: " + sendMessageResponse.messageId());
-    }
-}
+		<dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-s3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-iam</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk16</artifactId>
+            <version>1.45</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-kms</artifactId>
+         </dependency>
+         <dependency>
+      		<groupId>com.amazonaws</groupId>
+      		<artifactId>aws-java-sdk-sqs</artifactId>
+    	 </dependency>
+    	 <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-rekognition</artifactId>
+        </dependency>
+        <dependency>
+        	<groupId>javax.jms</groupId>
+        	<artifactId>javax.jms-api</artifactId>
+        	<version>2.0</version>
+        </dependency>
+        <dependency>
+        	<groupId>com.amazonaws</groupId>
+        	<artifactId>amazon-sqs-java-messaging-lib</artifactId>
+        	<version>1.0.6</version>
+        </dependency>
+        <dependency>
+        	<groupId>org.springframework.cloud</groupId>
+        	<artifactId>spring-cloud-aws-core</artifactId>
+        </dependency>
+	</dependencies>
+  
+  <dependencyManagement>	
+    <dependencies>
+      <dependency>
+		<groupId>org.springframework.cloud</groupId>
+	    <artifactId>spring-cloud-dependencies</artifactId>
+	    <version>${spring-cloud.version}</version>
+		<type>pom</type>
+		<scope>import</scope>
+	  </dependency>
+      <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-bom</artifactId>
+        <version>1.11.245</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+	<build>
+        <plugins>	
+		<plugin>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-maven-plugin</artifactId>
+			 <configuration>
+                         <mainClass>com.aws.ec2.AWSObjectRekognition</mainClass>
+                        </configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>16</source>
+					<target>16</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>
