@@ -1,5 +1,10 @@
 package com.aws.instanceA;
 
+/**
+ * Hello world!
+ *
+ */
+
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.rekognition.RekognitionClient;
 import software.amazon.awssdk.services.rekognition.model.DetectLabelsRequest;
@@ -37,7 +42,7 @@ public class App
                 .build();
         
     
-        String sqsQueueUrl = "https://sqs.us-east-1.amazonaws.com/650382363291/ImageRecognitionQueue";
+        String sqsQueueUrl = "https://sqs.us-east-1.amazonaws.com/323052225972/MyQueue.fifo";
         
         String bucketName = "njit-cs-643"; 
         
