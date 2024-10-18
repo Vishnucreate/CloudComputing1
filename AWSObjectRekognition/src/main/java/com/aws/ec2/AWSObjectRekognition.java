@@ -1,4 +1,4 @@
-package com.aws.instanceA;
+package com.aws.ec2;
 
 /**
  * Hello world!
@@ -21,38 +21,38 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.util.List;
 
-public class App 
+public class AWSObjectRekognition
 {
-  
-   public static void main( String[] args )
+
+    public static void main( String[] args )
     {
-     Region region = Region.US_EAST_1; 
-        
-   
+        Region region = Region.US_EAST_1;
+
+
         RekognitionClient rekognitionClient = RekognitionClient.builder()
                 .region(region)
                 .build();
-        
+
         SqsClient sqsClient = SqsClient.builder()
                 .region(region)
                 .build();
-        
+
         S3Client s3Client = S3Client.builder()
                 .region(region)
                 .build();
-        
-    
+
+
         String sqsQueueUrl = "https://sqs.us-east-1.amazonaws.com/323052225972/MyQueue.fifo";
-        
-        String bucketName = "njit-cs-643"; 
-        
+
+        String bucketName = "njit-cs-643";
+
 
         List<String> imageNames = fetchImageNamesFromS3(bucketName, s3Client);
         for (String imageName : imageNames) {
             detectCars(bucketName, imageName, rekognitionClient, sqsClient, sqsQueueUrl);
         }
-        
-  
+
+
         rekognitionClient.close();
         sqsClient.close();
         s3Client.close();
@@ -78,7 +78,7 @@ public class App
                 .name(imageName)
                 .build();
 
-        
+
         Image image = Image.builder()
                 .s3Object(s3Object)
                 .build();
@@ -86,10 +86,10 @@ public class App
 
         DetectLabelsRequest request = DetectLabelsRequest.builder()
                 .image(image)
-                .minConfidence(90F) 
+                .minConfidence(90F)
                 .build();
 
-        
+
         DetectLabelsResponse result = rekognitionClient.detectLabels(request);
         List<Label> labels = result.labels();
 
@@ -97,7 +97,7 @@ public class App
             if (label.name().equalsIgnoreCase("Car") && label.confidence() >= 90) {
                 System.out.println("Car detected in image: " + imageName + " with confidence: " + label.confidence());
                 pushToSQS(imageName, sqsClient, sqsQueueUrl);
-                break; 
+                break;
             }
         }
     }
