@@ -1,158 +1,134 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>		
-		<version>2.3.4.RELEASE</version>
-		<relativePath/> <!-- lookup parent from repository -->
-	</parent>
+package com.aws.ec2;
 
-	<groupId>com.aws.ec2</groupId>
-	<artifactId>aws-object-rekognition</artifactId>
-	<packaging>jar</packaging>
-	<version>1.0-SNAPSHOT</version>	
-	<name>AWSObjectRekognition</name>
-	<description>Project Name</description>
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
 
-	<properties>
-		<java.version>11</java.version>
-		<spring-cloud.version>Hoxton.SR8</spring-cloud.version>
-		<url>http://maven.apache.org</url>
-     	<maven.compiler.source>1.8</maven.compiler.source>
-     	<maven.compiler.target>1.8</maven.compiler.target>
-	</properties>
-	
-	<dependencies>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-aws</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-aws-messaging</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>org.junit.vintage</groupId>
-					<artifactId>junit-vintage-engine</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-      		<groupId>com.amazonaws</groupId>
-     		<artifactId>aws-java-sdk-ec2</artifactId>
-    	</dependency>
-    	<dependency>
-      		<groupId>junit</groupId>
-      		<artifactId>junit</artifactId>
-      		<version>3.8.1</version>
-      		<scope>test</scope>
-    	</dependency>
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>s3</artifactId>
-			<version>2.28.22</version>
-		</dependency>
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>sqs</artifactId>
-			<version>2.28.22</version>
-		</dependency>
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>rekognition</artifactId>
-			<version>2.28.22</version>
-		</dependency>
+import javax.jms.JMSException;
+import javax.jms.MessageProducer;
+import javax.jms.Queue;
+import javax.jms.Session;
+import javax.jms.TextMessage;
 
-		<dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-s3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-sts</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-iam</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk16</artifactId>
-            <version>1.45</version>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-kms</artifactId>
-         </dependency>
-         <dependency>
-      		<groupId>com.amazonaws</groupId>
-      		<artifactId>aws-java-sdk-sqs</artifactId>
-    	 </dependency>
-    	 <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-rekognition</artifactId>
-        </dependency>
-        <dependency>
-        	<groupId>javax.jms</groupId>
-        	<artifactId>javax.jms-api</artifactId>
-        	<version>2.0</version>
-        </dependency>
-        <dependency>
-        	<groupId>com.amazonaws</groupId>
-        	<artifactId>amazon-sqs-java-messaging-lib</artifactId>
-        	<version>1.0.6</version>
-        </dependency>
-        <dependency>
-        	<groupId>org.springframework.cloud</groupId>
-        	<artifactId>spring-cloud-aws-core</artifactId>
-        </dependency>
-	</dependencies>
-  
-  <dependencyManagement>	
-    <dependencies>
-      <dependency>
-		<groupId>org.springframework.cloud</groupId>
-	    <artifactId>spring-cloud-dependencies</artifactId>
-	    <version>${spring-cloud.version}</version>
-		<type>pom</type>
-		<scope>import</scope>
-	  </dependency>
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-bom</artifactId>
-        <version>1.11.245</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-	<build>
-        <plugins>	
-		<plugin>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-maven-plugin</artifactId>
-			 <configuration>
-                         <mainClass>com.aws.ec2.AWSObjectRekognition</mainClass>
-                        </configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<source>16</source>
-					<target>16</target>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
-</project>
+import org.springframework.boot.SpringApplication;
+
+import com.amazon.sqs.javamessaging.AmazonSQSMessagingClientWrapper;
+import com.amazon.sqs.javamessaging.ProviderConfiguration;
+import com.amazon.sqs.javamessaging.SQSConnection;
+import com.amazon.sqs.javamessaging.SQSConnectionFactory;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.rekognition.AmazonRekognition;
+import com.amazonaws.services.rekognition.AmazonRekognitionClientBuilder;
+import com.amazonaws.services.rekognition.model.AmazonRekognitionException;
+import com.amazonaws.services.rekognition.model.DetectLabelsRequest;
+import com.amazonaws.services.rekognition.model.DetectLabelsResult;
+import com.amazonaws.services.rekognition.model.Image;
+import com.amazonaws.services.rekognition.model.Label;
+import com.amazonaws.services.rekognition.model.S3Object;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.ListObjectsV2Request;
+import com.amazonaws.services.s3.model.ListObjectsV2Result;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.amazonaws.services.sqs.model.CreateQueueRequest;
+
+public class AWSObjectRekognition {
+
+    public static void main(String[] args) throws IOException, JMSException {
+        SpringApplication.run(AWSObjectRekognition.class, args);
+        String bucketName = "njit-cs-643";
+        String queueUrl = "https://sqs.us-east-1.amazonaws.com/323052225972/sqsforcarimage";
+
+        try {
+            // Initialize the S3 client
+            AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
+                    .withCredentials(new DefaultAWSCredentialsProviderChain())
+                    .build();
+
+            // Set up the SQS connection factory for the specified region
+            // SQSConnectionFactory connectionFactory = new SQSConnectionFactory(
+            //         new ProviderConfiguration(),
+            //         AmazonSQSClientBuilder.standard() 
+            //                 .withCredentials(new DefaultAWSCredentialsProviderChain())
+            // );
+            AmazonSQS connectionFactory = AmazonSQSClientBuilder.standard()
+        .withCredentials(new DefaultAWSCredentialsProviderChain())
+        .build();
+
+            // Establish the SQS connection
+            SQSConnection connection = ((SQSConnectionFactory) connectionFactory).createConnection();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+            // Create a session queue from the queue URL
+            Queue queue = session.createQueue(queueUrl);
+
+            // Create a message producer for the queue
+            MessageProducer producer = session.createProducer(queue);
+
+            // List objects in the S3 bucket
+            ListObjectsV2Request req = new ListObjectsV2Request().withBucketName(bucketName);
+            ListObjectsV2Result result;
+
+            do {
+                result = s3Client.listObjectsV2(req);
+                for (S3ObjectSummary objectSummary : result.getObjectSummaries()) {
+                    String photo = objectSummary.getKey();
+                    
+                    // Create the Rekognition client
+                    AmazonRekognition rekognitionClient = AmazonRekognitionClientBuilder.standard()
+                          
+                            .withCredentials(new DefaultAWSCredentialsProviderChain())
+                            .build();
+
+                    // Create the request for Rekognition
+                    DetectLabelsRequest detectLabelsRequest = new DetectLabelsRequest()
+                            .withImage(new Image().withS3Object(new S3Object().withName(photo).withBucket(bucketName)))
+                            .withMaxLabels(10)
+                            .withMinConfidence(75F);
+
+                    try {
+                        // Call Rekognition to detect labels
+                        DetectLabelsResult detectLabelsResult = rekognitionClient.detectLabels(detectLabelsRequest);
+                        List<Label> labels = detectLabelsResult.getLabels();
+
+                        for (Label label : labels) {
+                            if ("Car".equals(label.getName()) && label.getConfidence() > 90) {
+                                System.out.println("Detected 'Car' with confidence: " + label.getConfidence());
+
+                                // Send a message to the SQS queue
+                                TextMessage message = session.createTextMessage(photo);
+                                message.setStringProperty("JMSXGroupID", "Default"); // Group ID for FIFO queue
+                                producer.send(message);
+
+                                System.out.println("Message sent with ID: " + message.getJMSMessageID());
+                            }
+                        }
+                    } catch (AmazonRekognitionException e) {
+                        System.err.println("Rekognition error for image: " + photo);
+                        e.printStackTrace();
+                    }
+                }
+                req.setContinuationToken(result.getNextContinuationToken());
+            } while (result.isTruncated());
+
+            connection.close();
+
+        } catch (AmazonServiceException e) {
+            System.err.println("AWS service error:");
+            e.printStackTrace();
+        } catch (SdkClientException e) {
+            System.err.println("AWS SDK client error:");
+            e.printStackTrace();
+        }
+    }
+}
